@@ -14,12 +14,12 @@ const client = new pg.Client(conString);
 
 /*********************************MIDDLEWARE*************************************/
 app.use(bodyParser.json);
-app.use(bodyParser.urlencoded({extended: true});
+app.use(bodyParser.urlencoded({extended: true}));
 app.use(cors());
 
 /*********************************OTHER SETUP************************************/
 client.connect();
-app.listen(PORT, () => console.log(`Listening on port ${PORT}`);
+app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
 
 /*********************************POSTS******************************************/
 
