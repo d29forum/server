@@ -19,7 +19,7 @@ app.use(cors());
 
 /*********************************OTHER SETUP************************************/
 client.connect();
-app.listen(PORT, () => console.log(`Listening on port ${PORT}`);
+app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
 
 /*********************************POSTS******************************************/
 
