@@ -13,21 +13,30 @@ const conString = process.env.DATABASE_URL;
 const client = new pg.Client(conString);
 
 /*********************************MIDDLEWARE*************************************/
-app.use(bodyParser.json);
+app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(cors());
 
 /*********************************OTHER SETUP************************************/
 client.connect();
-app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
+app.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
 
 /*********************************POSTS******************************************/
-
+app.post('/api/db/users', (req,res) => {
+  res.send('hit post route');
+});
 
 /*********************************GETS*******************************************/
-
+app.get('/api/db/users/:id', (req,res) => {
+  res.send('hit get route');
+});
 
 /*********************************PUTS*******************************************/
-
+app.put('/api/db/users/:id', (req,res) => {
+  res.send('hit put route');
+});
 
 /*********************************DELETES****************************************/
+app.delete('/api/db/users/:id', (req,res) => {
+  res.send('hit delete route');
+});
