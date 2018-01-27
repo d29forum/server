@@ -22,12 +22,20 @@ client.connect();
 app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
 
 /*********************************POSTS******************************************/
+app.post('/api/db/users', (req,res) => {
+  console.logO('hit post route');
+  res.send('hit get route');
+});
 
 
 /*********************************GETS*******************************************/
-
+app.get('/api/db/users/:id', (req,res) => {
+  console.log('hit get route');
+  res.send('hit test route');
+});
 
 /*********************************PUTS*******************************************/
 
 
 /*********************************DELETES****************************************/
+
