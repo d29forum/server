@@ -62,8 +62,16 @@ app.put('/api/db/users/:username/login', (req,res) => {
 });
 
 app.put('/api/db/users/:username', (req,res) => {
-  client.query(`UPDATE users SET first_name=$1, last_name=$2, email=$3, username=$4, interests=$5, role=$6, gravatar_hash=$7 WHERE username=$8;`,
-    [req.body.first_name, req.body.last_name, req.body.email, req.body.username, req.body.interests, req.body.role, req.body.gravatar_hash, req.params.username]);
+  if(req.body.email) {
+    client.query(`UPDATE users SET first_name=$1, last_name=$2, email=$3, username=$4, interests=$5, gravatar_hash=$6 WHERE username=$7;`,
+    [req.body.first_name, req.body.last_name, req.body.email, req.body.username, req.body.interests, req.body.gravatar_hash, req.params.username])
+    .then(() => res.send(req.body.username));
+  }
+  else {
+    client.query(`UPDATE users SET first_name=$1, last_name=$2, username=$3, interests=$4, gravatar_hash=$5 WHERE username=$6;`,
+    [req.body.first_name, req.body.last_name, req.body.username, req.body.interests, req.body.gravatar_hash, req.params.username])
+    .then(() => res.send(req.body.username));
+  }
 });
 
 //COMMENTS MODEL
@@ -75,7 +83,8 @@ app.put('/api/db/comments/:id', (req,res) => {
 /*********************************DELETES****************************************/
 //USER MODEL
 app.delete('/api/db/users/:username', (req,res) => {
-  client.query(`DELETE FROM users WHERE username=$1;`, [req.params.username]);
+  client.query(`DELETE FROM users WHERE username=$1;`, [req.params.username])
+    .then(result => res.send('success'));
 });
 
 //COMMENT MODEL
