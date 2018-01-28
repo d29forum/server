@@ -37,6 +37,12 @@ app.post('/api/db/comments', (req,res) => {
     [req.body.content, req.body.creator, req.body.thread_parent, req.body.subforum_parent]);
 });
 
+//THREAD MODEL
+app.post('api/db/threads', (req,res) => {
+  client.query(`INSERT INTO threads (title,creator,subforum_parent,created_on,comment_count,view_count,last_comment) VALUES ($1,$2,$3,to_timestamp(${Date.now()}/1000),1,1,$4);`,
+    [req.body.title, req.body.creator, req.body.subforum_parent, req.body.last_comment]);
+});
+
 /*********************************GETS*******************************************/
 //USER MODEL
 app.get('/api/db/users/:username', (req,res) => {
@@ -68,6 +74,12 @@ app.put('/api/db/comments/:id', (req,res) => {
     [req.body.content, req.params.id]);
 });
 
+//THREADS MODEL
+app.put('api/db/threads/:id', (req,res) => {
+  client.query(`UPDATE threads SET title=$1, subforum_parent=$2 WHERE id=$3;`,
+    [req.body.title, req.body.subforum_parent, req.params.id]);
+});
+
 /*********************************DELETES****************************************/
 //USER MODEL
 app.delete('/api/db/users/:username', (req,res) => {
@@ -76,5 +88,10 @@ app.delete('/api/db/users/:username', (req,res) => {
 
 //COMMENT MODEL
 app.delete('/api/db/comments/:id', (req,res) => {
-  client.query(`DELETE FROM comments WHERE id = $1`, [req.params.id]);
+  client.query(`DELETE FROM comments WHERE id = $1;`, [req.params.id]);
+});
+
+//THREADS MODEL
+app.delete('api/db/threads/:id', (req,res) => {
+  client.query(`DELETE FROM threads WHERE id = $1;`, [req.params.id]);
 });
