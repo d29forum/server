@@ -27,8 +27,12 @@ app.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
 app.post('/api/db/users', (req,res) => {
   client.query(`INSERT INTO users (first_name, last_name, username, password_hash, interests, created_on, num_comments, role, last_login, gravatar_hash) VALUES ('','',$1,'N/A','',to_timestamp(${Date.now()}/1000),0,'user',to_timestamp(${Date.now()}/1000),'');`,
     [req.body.username])
-    .then(() => res.send('Post complete'))
-    .catch(console.error);
+    .then(() => {
+      client.query(`SELECT id FROM users WHERE username=$1;`,
+      [req.body.username])
+      .then(result => res.send(result.rows));
+    })
+    
 });
 
 //COMMENT MODEL
