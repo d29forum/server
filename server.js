@@ -8,9 +8,9 @@ const bodyParser = require('body-parser');
 
 /*********************************CONST DECLARATIONS*****************************/
 const app = express();
-const PORT = process.env.PORT || 3737;
-// const conString = process.env.DATABASE_URL;
-const conString = 'postgres://localhost:5432/d29forum';
+const PORT = process.env.PORT //|| 3737;
+const conString = process.env.DATABASE_URL;
+// const conString = 'postgres://localhost:5432/d29forum';
 const client = new pg.Client(conString);
 
 /*********************************MIDDLEWARE*************************************/
@@ -64,7 +64,7 @@ app.get('/api/db/users/:username', (req,res) => {
 
 //THREAD MODEL
 app.get('/api/db/thread/:id', (req,res) => {
-  client.query(`SELECT * FROM comments INNER JOIN users ON comments.creator = users.id WHERE thread_parent=$1;`, [req.params.id])
+  client.query(`SELECT username, users.created_on AS user_created_on, num_comments, gravatar_hash, comments.created_on AS comment_created_on, content FROM comments INNER JOIN users ON comments.creator = users.id WHERE thread_parent=$1;`, [req.params.id])
   .then(result => res.send(result.rows));
 });
 
