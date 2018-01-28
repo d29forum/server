@@ -8,8 +8,9 @@ const bodyParser = require('body-parser');
 
 /*********************************CONST DECLARATIONS*****************************/
 const app = express();
-const PORT = process.env.PORT;
-const conString = process.env.DATABASE_URL;
+const PORT = process.env.PORT || 3737;
+// const conString = process.env.DATABASE_URL;
+const conString = 'postgres://localhost:5432/d29forum';
 const client = new pg.Client(conString);
 
 /*********************************MIDDLEWARE*************************************/
@@ -24,8 +25,10 @@ app.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
 /*********************************POSTS******************************************/
 //USER MODEL
 app.post('/api/db/users', (req,res) => {
-  client.query(`INSERT INTO users (first_name, last_name, email, username, password_hash, interests, created_on, num_comments, role, last_login, gravatar_hash) VALUES ($1,$2,$3,$4,'N/A',$5,to_timestamp(${Date.now()}/1000),0,$6,to_timestamp(${Date.now()}/1000),$7);`,
-    [req.body.first_name, req.body.last_name, req.body.email, req.body.username, req.body.interests, req.body.role, req.body.gravatar_hash]);
+  client.query(`INSERT INTO users (first_name, last_name, username, password_hash, interests, created_on, num_comments, role, last_login, gravatar_hash) VALUES ('','',$1,'N/A','',to_timestamp(${Date.now()}/1000),0,'user',to_timestamp(${Date.now()}/1000),'');`,
+    [req.body.username])
+    .then(() => res.send('Post complete'))
+    .catch(console.error);
 });
 
 //COMMENT MODEL
