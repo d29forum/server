@@ -38,15 +38,23 @@ app.post('/api/db/users', (req,res) => {
 //COMMENT MODEL
 app.post('/api/db/comments', (req,res) => {
   client.query(`INSERT INTO comments (content, created_on, creator, thread_parent, subforum_parent) VALUES ($1, to_timestamp(${Date.now()}/1000), $2, $3, $4);`,
-    [req.body.content, req.body.creator, req.body.thread_parent, req.body.subforum_parent]);
+    [req.body.content, req.body.creator, req.body.thread_parent, req.body.subforum_parent])
+    .then(() => res.send('success'));
 });
 
 //THREAD MODEL
 app.post('api/db/threads', (req,res) => {
   client.query(`INSERT INTO threads (title,creator,subforum_parent,created_on,comment_count,view_count,last_comment) VALUES ($1,$2,$3,to_timestamp(${Date.now()}/1000),1,1,$4);`,
-    [req.body.title, req.body.creator, req.body.subforum_parent, req.body.last_comment]);
+    [req.body.title, req.body.creator, req.body.subforum_parent, req.body.last_comment])
+    .then(() => res.send('success'));
 });
 
+//SUBFORUM MODEL
+app.post('api/db/subfora', (req,res) => {
+  client.query(`INSERT INTO subfora (title, subtitle, thread_count, comment_count, last_comment) VALUES ($1,$2,0,0,1);`,
+    [req.body.title, req.body.subtitle])
+    .then(() => res.send('success'));
+});
 /*********************************GETS*******************************************/
 //USER MODEL
 app.get('/api/db/users/:username', (req,res) => {
@@ -57,6 +65,12 @@ app.get('/api/db/users/:username', (req,res) => {
 //THREAD MODEL
 app.get('/api/db/thread/:id', (req,res) => {
   client.query(`SELECT * FROM comments INNER JOIN users ON comments.creator = users.id WHERE thread_parent=$1;`, [req.params.id])
+  .then(result => res.send(result.rows));
+});
+
+//SUBFORUM MODEL
+app.get('/api/db/subfora/:id', (req,res) => {
+  client.query(`SELECT * FROM threads INNER JOIN threads ON subfora.id = threads.subforum_parent WHERE subforum_parent=$1;`, [req.params.id])
   .then(result => res.send(result.rows));
 });
 
@@ -83,13 +97,22 @@ app.put('/api/db/users/:username', (req,res) => {
 //COMMENTS MODEL
 app.put('/api/db/comments/:id', (req,res) => {
   client.query(`UPDATE comments SET content=$1 WHERE id=$2;`,
-    [req.body.content, req.params.id]);
+    [req.body.content, req.params.id])
+    .then(() => res.send(req.params.id));
 });
 
 //THREADS MODEL
 app.put('api/db/threads/:id', (req,res) => {
   client.query(`UPDATE threads SET title=$1, subforum_parent=$2 WHERE id=$3;`,
-    [req.body.title, req.body.subforum_parent, req.params.id]);
+    [req.body.title, req.body.subforum_parent, req.params.id])
+    .then(() => res.send(req.params.id));
+});
+
+//SUBFORUM MODEL
+app.put('api/db/subfora/:id', (req,reqs) => {
+  client.query(`UPDATE subfora SET title=$1, subtitle=$2 WHERE id=$3;`,
+    [req.body.title, req.body.subtitle, req.params.id])
+    .then(() => res.send(req.params.id));
 });
 
 /*********************************DELETES****************************************/
@@ -101,10 +124,18 @@ app.delete('/api/db/users/:username', (req,res) => {
 
 //COMMENT MODEL
 app.delete('/api/db/comments/:id', (req,res) => {
-  client.query(`DELETE FROM comments WHERE id = $1;`, [req.params.id]);
+  client.query(`DELETE FROM comments WHERE id = $1;`, [req.params.id])
+  .then(() => res.send(req.params.id));
 });
 
 //THREADS MODEL
 app.delete('api/db/threads/:id', (req,res) => {
-  client.query(`DELETE FROM threads WHERE id = $1;`, [req.params.id]);
+  client.query(`DELETE FROM threads WHERE id = $1;`, [req.params.id])
+  .then(() => res.send(req.params.id));
+});
+
+//SUBFORUM MODEL
+app.put('api/db/subfora/:id', (req,res) => {
+  client.query(`DELETE FROM subfora WHERE id=$1;`, [req.params.id])
+  .then(() => res.send(req.params.id));
 });
