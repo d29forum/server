@@ -71,8 +71,15 @@ app.get('/api/db/thread/:id', (req,res) => {
 //SUBFORUM MODEL
 app.get('/api/db/subfora/:id', (req,res) => {
   var queries = {};
+  queries.results = [];
+
   client.query(`SELECT threads.id AS thread_id, title, users.username AS thread_creator, view_count, comment_count, comments.created_on AS last_comment_created_on FROM threads INNER JOIN comments ON threads.last_comment = comments.id INNER JOIN users ON threads.creator = users.id WHERE threads.subforum_parent=$1;`, [req.params.id])
-  .then(result => res.send(result.rows));
+  .then(result => queries.rows = result.rows);
+
+  client.query(`SELECT users.username AS last_commenter FROM threads INNER JOIN comments ON threads.last_comment = comments.id INNER JOIN users ON comments.creator = users.id WHERE threads.subforum_parent=$1;`, [req.params.id])
+  .then(result => { for (var i = 0; i < result.rows.length; i++) queries.results.push(Object.assign({},result.rows[i],queries.rows[i]));})
+
+  .then(() => res.send(queries.results));
 });
 
 /*********************************PUTS*******************************************/
