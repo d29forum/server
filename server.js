@@ -30,9 +30,11 @@ app.post('/api/db/users', (req,res) => {
     .then(() => {
       client.query(`SELECT id FROM users WHERE username=$1;`,
       [req.body.username])
-      .then(result => res.send(result.rows));
+      .then(result => {
+        if (!result.rows.length) throw 'Username already exists';
+         res.status(200).send(result.rows);})
     })
-    
+    .catch(err => { console.log(err); res.status(500).send(err.code);});
 });
 
 //COMMENT MODEL
