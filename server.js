@@ -102,13 +102,13 @@ app.get('/api/db/subfora/:id', (req,res) => {
 
 // FORUM VIEW GETS ALL SUBFORAS AKA HOME APGE
 app.get('/api/db/forum', (req, res) => {
-  client.query('SELECT * FROM subfora;')
+  client.query(`SELECT subfora.id AS subforaId, subfora.title, subfora.subtitle, subfora.comment_count, subfora.thread_count, comments.created_on, comments.thread_parent AS commentThreadParent, comments.subforum_parent AS commentSubforumParent, comments.id AS commentId, users.username FROM subfora INNER JOIN comments ON subfora.last_comment = comments.id INNER JOIN users ON comments.creator = users.id;`)
   .then(function(data) {
     res.send(data.rows);
   })
   .catch(function(err) {
     console.error(err);
-  });
+  })
 });
 
 /*********************************PUTS*******************************************/
