@@ -8,9 +8,9 @@ const bodyParser = require('body-parser');
 
 /*********************************CONST DECLARATIONS*****************************/
 const app = express();
-const PORT = process.env.PORT //|| 3737;
-const conString = process.env.DATABASE_URL;
-// const conString = 'postgres://localhost:5432/d29forum';
+const PORT = process.env.PORT || 3737;
+// const conString = process.env.DATABASE_URL;
+const conString = 'postgres://localhost:5432/d29forum';
 const client = new pg.Client(conString);
 
 /*********************************MIDDLEWARE*************************************/
@@ -37,20 +37,36 @@ app.post('/api/db/users', (req,res) => {
 
 //COMMENT MODEL
 app.post('/api/db/comments', (req,res) => {
-  client.query(`INSERT INTO comments (content, created_on, creator, thread_parent, subforum_parent) VALUES ($1, to_timestamp(${Date.now()}/1000), $2, $3, $4);`,
+  client.query(`INSERT INTO comments (content, created_on, creator, thread_parent, subforum_parent) VALUES ($1, to_timestamp(${Date.now()}/1000), $2, $3, $4) RETURNING id AS content_id;`,
     [req.body.content, req.body.creator, req.body.thread_parent, req.body.subforum_parent])
-    .then(() => res.send('success'));
+    .then(result => {
+      client.query(`UPDATE users SET num_comments = num_comments + 1 WHERE id=$1;`, [req.body.creator]);
+      client.query(`UPDATE threads SET comment_count = comment_count + 1, last_comment = $2 WHERE id=$1;`, [req.body.thread_parent, result.rows[0].content_id]);
+      client.query(`UPDATE subfora SET comment_count = comment_count + 1, last_comment = $2 WHERE id=$1;`, [req.body.subforum_parent, result.rows[0].content_id]);
+    })
+    .then(result=>res.send(result));
 });
 
 //THREAD MODEL
-app.post('api/db/threads', (req,res) => {
-  client.query(`INSERT INTO threads (title,creator,subforum_parent,created_on,comment_count,view_count,last_comment) VALUES ($1,$2,$3,to_timestamp(${Date.now()}/1000),1,1,$4);`,
-    [req.body.title, req.body.creator, req.body.subforum_parent, req.body.last_comment])
-    .then(() => res.send('success'));
+app.post('/api/db/threads', (req,res) => {
+  client.query(`INSERT INTO threads (title,creator,subforum_parent,created_on,comment_count,view_count,last_comment) VALUES ($1,$2,$3,to_timestamp(${Date.now()}/1000),1,1,2) RETURNING id AS thread_id;`,
+    [req.body.title, req.body.creator, req.body.subforum_parent])
+    .then(result => {
+      client.query(`INSERT INTO comments(content, created_on, creator, thread_parent, subforum_parent) VALUES ($1, to_timestamp(${Date.now()}/1000), $2, $4, $3) RETURNING id AS comment_id, thread_parent AS thread_id`,
+        [req.body.content, req.body.creator, req.body.subforum_parent, result.rows[0].thread_id])
+          .then(result=> {
+            client.query(`UPDATE threads SET last_comment = $1 WHERE id=$2 RETURNING $2 AS thread_id;`,
+              [result.rows[0].comment_id, result.rows[0].thread_id])
+                .then(result=>res.send(result.rows))
+                .then(() => {
+                  client.query(`UPDATE users SET num_comments = num_comments + 1 WHERE id=$1;`, [req.body.creator])
+                });
+          });
+    });
 });
 
 //SUBFORUM MODEL
-app.post('api/db/subfora', (req,res) => {
+app.post('/api/db/subfora', (req,res) => {
   client.query(`INSERT INTO subfora (title, subtitle, thread_count, comment_count, last_comment) VALUES ($1,$2,0,0,1);`,
     [req.body.title, req.body.subtitle])
     .then(() => res.send('success'));
@@ -64,14 +80,33 @@ app.get('/api/db/users/:username', (req,res) => {
 
 //THREAD MODEL
 app.get('/api/db/thread/:id', (req,res) => {
-  client.query(`SELECT * FROM comments INNER JOIN users ON comments.creator = users.id WHERE thread_parent=$1;`, [req.params.id])
+  client.query(`SELECT comments.id AS comment_id, comments.created_on AS comment_created_on, username, users.created_on AS user_created_on, num_comments, gravatar_hash, content FROM comments INNER JOIN users ON comments.creator = users.id WHERE thread_parent=$1;`, [req.params.id])
   .then(result => res.send(result.rows));
 });
 
-//SUBFORUM MODEL
+//SUBFORUM MODEL BY ID
 app.get('/api/db/subfora/:id', (req,res) => {
-  client.query(`SELECT * FROM threads INNER JOIN threads ON subfora.id = threads.subforum_parent WHERE subforum_parent=$1;`, [req.params.id])
-  .then(result => res.send(result.rows));
+  var queries = {};
+  queries.results = [];
+
+  client.query(`SELECT threads.id AS thread_id, title, users.username AS thread_creator, view_count, comment_count, comments.created_on AS last_comment_created_on FROM threads INNER JOIN comments ON threads.last_comment = comments.id INNER JOIN users ON threads.creator = users.id WHERE threads.subforum_parent=$1;`, [req.params.id])
+  .then(result => queries.rows = result.rows);
+
+  client.query(`SELECT users.username AS last_commenter FROM threads INNER JOIN comments ON threads.last_comment = comments.id INNER JOIN users ON comments.creator = users.id WHERE threads.subforum_parent=$1;`, [req.params.id])
+  .then(result => { for (var i = 0; i < result.rows.length; i++) queries.results.push(Object.assign({},result.rows[i],queries.rows[i]));})
+
+  .then(() => res.send(queries.results));
+});
+
+// FORUM VIEW GETS ALL SUBFORAS AKA HOME APGE
+app.get('/api/db/forum', (req, res) => {
+  client.query('SELECT * FROM subfora;')
+  .then(function(data) {
+    res.send(data.rows);
+  })
+  .catch(function(err) {
+    console.error(err);
+  });
 });
 
 /*********************************PUTS*******************************************/
@@ -137,5 +172,5 @@ app.delete('api/db/threads/:id', (req,res) => {
 //SUBFORUM MODEL
 app.put('api/db/subfora/:id', (req,res) => {
   client.query(`DELETE FROM subfora WHERE id=$1;`, [req.params.id])
-  .then(() => res.send(req.params.id));
+  .then(() => res.send(req.params.id))
 });
