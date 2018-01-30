@@ -55,11 +55,13 @@ app.post('/api/db/threads', (req,res) => {
       client.query(`INSERT INTO comments(content, created_on, creator, thread_parent, subforum_parent) VALUES ($1, to_timestamp(${Date.now()}/1000), $2, $4, $3) RETURNING id AS comment_id, thread_parent AS thread_id`,
         [req.body.content, req.body.creator, req.body.subforum_parent, result.rows[0].thread_id])
           .then(result=> {
-            client.query(`UPDATE threads SET last_comment = $1 WHERE id=$2 RETURNING $2 AS thread_id;`,
+            client.query(`UPDATE threads SET last_comment = $1 WHERE id=$2 RETURNING id AS thread_id, last_comment AS comment_id;`,
               [result.rows[0].comment_id, result.rows[0].thread_id])
-                .then(result=>res.send(result.rows))
-                .then(() => {
-                  client.query(`UPDATE users SET num_comments = num_comments + 1 WHERE id=$1;`, [req.body.creator])
+                .then(result => {
+                  client.query(`UPDATE users SET num_comments = num_comments + 1 WHERE id=$1;`, [req.body.creator]);
+                  console.log(req.body.subforum_parent + ' ' + result.rows[0].comment_id);
+                  client.query(`UPDATE subfora SET comment_count = comment_count + 1, thread_count = thread_count + 1, last_comment = $2 WHERE id=$1;`, [req.body.subforum_parent, result.rows[0].comment_id]);
+                  res.send(result.rows);
                 });
           });
     });
