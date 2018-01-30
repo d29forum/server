@@ -77,7 +77,10 @@ app.post('/api/db/subfora', (req,res) => {
 //USER MODEL
 app.get('/api/db/users/:username', (req,res) => {
   client.query(`SELECT * FROM users WHERE username=$1;`, [req.params.username])
-  .then(result => res.send(result.rows));
+  .then(result => {
+    if (!result.rows.length) throw 'User does not exist';
+    res.status(200).send(result.rows);})
+  .catch(err => { console.log(err); res.status(500).send(err);});
 });
 
 //THREAD MODEL
