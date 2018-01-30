@@ -8,9 +8,9 @@ const bodyParser = require('body-parser');
 
 /*********************************CONST DECLARATIONS*****************************/
 const app = express();
-const PORT = process.env.PORT //|| 3737;
-const conString = process.env.DATABASE_URL;
-// const conString = 'postgres://localhost:5432/d29forum';
+const PORT = process.env.PORT || 3737;
+// const conString = process.env.DATABASE_URL;
+const conString = 'postgres://localhost:5432/d29forum';
 const client = new pg.Client(conString);
 
 /*********************************MIDDLEWARE*************************************/
@@ -68,7 +68,7 @@ app.get('/api/db/thread/:id', (req,res) => {
   .then(result => res.send(result.rows));
 });
 
-//SUBFORUM MODEL
+//SUBFORUM MODEL BY ID
 app.get('/api/db/subfora/:id', (req,res) => {
   var queries = {};
   queries.results = [];
@@ -80,6 +80,17 @@ app.get('/api/db/subfora/:id', (req,res) => {
   .then(result => { for (var i = 0; i < result.rows.length; i++) queries.results.push(Object.assign({},result.rows[i],queries.rows[i]));})
 
   .then(() => res.send(queries.results));
+});
+
+// FORUM VIEW GETS ALL SUBFORAS AKA HOME APGE
+app.get('/api/db/forum', (req, res) => {
+  client.query('SELECT * FROM subfora;')
+  .then(function(data) {
+    res.send(data.rows);
+  })
+  .catch(function(err) {
+    console.error(err);
+  });
 });
 
 /*********************************PUTS*******************************************/
@@ -145,5 +156,5 @@ app.delete('api/db/threads/:id', (req,res) => {
 //SUBFORUM MODEL
 app.put('api/db/subfora/:id', (req,res) => {
   client.query(`DELETE FROM subfora WHERE id=$1;`, [req.params.id])
-  .then(() => res.send(req.params.id));
+  .then(() => res.send(req.params.id))
 });
