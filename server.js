@@ -55,11 +55,13 @@ app.post('/api/db/threads', (req,res) => {
       client.query(`INSERT INTO comments(content, created_on, creator, thread_parent, subforum_parent) VALUES ($1, to_timestamp(${Date.now()}/1000), $2, $4, $3) RETURNING id AS comment_id, thread_parent AS thread_id`,
         [req.body.content, req.body.creator, req.body.subforum_parent, result.rows[0].thread_id])
           .then(result=> {
-            client.query(`UPDATE threads SET last_comment = $1 WHERE id=$2 RETURNING $2 AS thread_id;`,
+            client.query(`UPDATE threads SET last_comment = $1 WHERE id=$2 RETURNING id AS thread_id, last_comment AS comment_id;`,
               [result.rows[0].comment_id, result.rows[0].thread_id])
-                .then(result=>res.send(result.rows))
-                .then(() => {
-                  client.query(`UPDATE users SET num_comments = num_comments + 1 WHERE id=$1;`, [req.body.creator])
+                .then(result => {
+                  client.query(`UPDATE users SET num_comments = num_comments + 1 WHERE id=$1;`, [req.body.creator]);
+                  console.log(req.body.subforum_parent + ' ' + result.rows[0].comment_id);
+                  client.query(`UPDATE subfora SET comment_count = comment_count + 1, thread_count = thread_count + 1, last_comment = $2 WHERE id=$1;`, [req.body.subforum_parent, result.rows[0].comment_id]);
+                  res.send(result.rows);
                 });
           });
     });
@@ -75,12 +77,13 @@ app.post('/api/db/subfora', (req,res) => {
 //USER MODEL
 app.get('/api/db/users/:username', (req,res) => {
   client.query(`SELECT * FROM users WHERE username=$1;`, [req.params.username])
+  .then(client.query(`UPDATE users SET last_login = to_timestamp(${Date.now()}/1000) WHERE username=$1;`, [req.params.username]))
   .then(result => res.send(result.rows));
 });
 
 //THREAD MODEL
 app.get('/api/db/thread/:id', (req,res) => {
-  client.query(`SELECT comments.id AS comment_id, comments.created_on AS comment_created_on, username, users.created_on AS user_created_on, num_comments, gravatar_hash, content FROM comments INNER JOIN users ON comments.creator = users.id WHERE thread_parent=$1;`, [req.params.id])
+  client.query(`SELECT comments.id AS comment_id, comments.created_on AS comment_created_on, subfora.title AS subforum_title, threads.title AS thread_title, username, users.created_on AS user_created_on, num_comments, gravatar_hash, content FROM comments INNER JOIN users ON comments.creator = users.id INNER JOIN subfora ON comments.subforum_parent = subfora.id INNER JOIN threads ON comments.thread_parent = threads.id WHERE thread_parent=$1;`, [req.params.id])
   .then(result => res.send(result.rows));
 });
 
@@ -100,21 +103,22 @@ app.get('/api/db/subfora/:id', (req,res) => {
 
 // FORUM VIEW GETS ALL SUBFORAS AKA HOME APGE
 app.get('/api/db/forum', (req, res) => {
-  client.query('SELECT * FROM subfora;')
+  client.query(`SELECT subfora.id AS subforaId, subfora.title, subfora.subtitle, subfora.comment_count, subfora.thread_count, comments.created_on, comments.thread_parent AS commentThreadParent, comments.subforum_parent AS commentSubforumParent, comments.id AS commentId, users.username FROM subfora INNER JOIN comments ON subfora.last_comment = comments.id INNER JOIN users ON comments.creator = users.id;`)
   .then(function(data) {
     res.send(data.rows);
   })
   .catch(function(err) {
     console.error(err);
-  });
+  })
 });
 
 /*********************************PUTS*******************************************/
 //USER MODEL
-app.put('/api/db/users/:username/login', (req,res) => {
-  client.query(`UPDATE users SET last_login = to_timestamp(${Date.now()}/1000) WHERE username=$1;`,
-    [req.params.username]);
-});
+// app.put('/api/db/users/:username/login', (req,res) => {
+//   client.query(`UPDATE users SET last_login = to_timestamp(${Date.now()}/1000) WHERE username=$1;`,
+//     [req.params.username])
+//     .then(result => res.send(req.params.username));
+// });
 
 app.put('/api/db/users/:username', (req,res) => {
   if(req.body.email) {
