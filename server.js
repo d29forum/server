@@ -43,14 +43,22 @@ app.post('/api/db/comments', (req,res) => {
 });
 
 //THREAD MODEL
-app.post('api/db/threads', (req,res) => {
-  client.query(`INSERT INTO threads (title,creator,subforum_parent,created_on,comment_count,view_count,last_comment) VALUES ($1,$2,$3,to_timestamp(${Date.now()}/1000),1,1,$4);`,
-    [req.body.title, req.body.creator, req.body.subforum_parent, req.body.last_comment])
-    .then(() => res.send('success'));
+app.post('/api/db/threads', (req,res) => {
+  client.query(`INSERT INTO threads (title,creator,subforum_parent,created_on,comment_count,view_count,last_comment) VALUES ($1,$2,$3,to_timestamp(${Date.now()}/1000),1,1,2) RETURNING id AS thread_id;`,
+    [req.body.title, req.body.creator, req.body.subforum_parent])
+    .then(result => {
+      client.query(`INSERT INTO comments(content, created_on, creator, thread_parent, subforum_parent) VALUES ($1, to_timestamp(${Date.now()}/1000), $2, $4, $3) RETURNING id AS comment_id, thread_parent AS thread_id`,
+        [req.body.content, req.body.creator, req.body.subforum_parent, result.rows[0].thread_id])
+          .then(result=> {
+            client.query(`UPDATE threads SET last_comment = $1 WHERE id=$2 RETURNING $2 AS thread_id;`,
+              [result.rows[0].comment_id, result.rows[0].thread_id])
+                .then(result=>res.send(result.rows));
+          });
+    });
 });
 
 //SUBFORUM MODEL
-app.post('api/db/subfora', (req,res) => {
+app.post('/api/db/subfora', (req,res) => {
   client.query(`INSERT INTO subfora (title, subtitle, thread_count, comment_count, last_comment) VALUES ($1,$2,0,0,1);`,
     [req.body.title, req.body.subtitle])
     .then(() => res.send('success'));
