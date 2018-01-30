@@ -77,6 +77,7 @@ app.post('/api/db/subfora', (req,res) => {
 //USER MODEL
 app.get('/api/db/users/:username', (req,res) => {
   client.query(`SELECT * FROM users WHERE username=$1;`, [req.params.username])
+  .then(client.query(`UPDATE users SET last_login = to_timestamp(${Date.now()}/1000) WHERE username=$1;`, [req.params.username]))
   .then(result => {
     if (!result.rows.length) throw 'User does not exist';
     res.status(200).send(result.rows);})
@@ -116,10 +117,11 @@ app.get('/api/db/forum', (req, res) => {
 
 /*********************************PUTS*******************************************/
 //USER MODEL
-app.put('/api/db/users/:username/login', (req,res) => {
-  client.query(`UPDATE users SET last_login = to_timestamp(${Date.now()}/1000) WHERE username=$1;`,
-    [req.params.username]);
-});
+// app.put('/api/db/users/:username/login', (req,res) => {
+//   client.query(`UPDATE users SET last_login = to_timestamp(${Date.now()}/1000) WHERE username=$1;`,
+//     [req.params.username])
+//     .then(result => res.send(req.params.username));
+// });
 
 app.put('/api/db/users/:username', (req,res) => {
   if(req.body.email) {
