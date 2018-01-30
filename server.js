@@ -86,6 +86,7 @@ app.get('/api/db/users/:username', (req,res) => {
 //THREAD MODEL
 app.get('/api/db/thread/:id', (req,res) => {
   client.query(`SELECT comments.id AS comment_id, comments.created_on AS comment_created_on, subfora.title AS subforum_title, threads.title AS thread_title, username, users.created_on AS user_created_on, num_comments, gravatar_hash, content FROM comments INNER JOIN users ON comments.creator = users.id INNER JOIN subfora ON comments.subforum_parent = subfora.id INNER JOIN threads ON comments.thread_parent = threads.id WHERE thread_parent=$1;`, [req.params.id])
+  .then(client.query(`UPDATE threads SET view_count = view_count + 1 WHERE id = $1;`, [req.params.id]))
   .then(result => res.send(result.rows));
 });
 
