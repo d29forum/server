@@ -115,7 +115,8 @@ app.get('/api/db/forum', (req, res) => {
 //USER MODEL
 app.put('/api/db/users/:username/login', (req,res) => {
   client.query(`UPDATE users SET last_login = to_timestamp(${Date.now()}/1000) WHERE username=$1;`,
-    [req.params.username]);
+    [req.params.username])
+    .then(result => res.send(req.params.username));
 });
 
 app.put('/api/db/users/:username', (req,res) => {
