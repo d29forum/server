@@ -30,9 +30,11 @@ app.post('/api/db/users', (req,res) => {
     .then(() => {
       client.query(`SELECT id FROM users WHERE username=$1;`,
       [req.body.username])
-      .then(result => res.send(result.rows));
+      .then(result => {
+        if (!result.rows.length) throw 'Username already exists';
+         res.status(200).send(result.rows);})
     })
-    
+    .catch(err => { console.log(err); res.status(500).send(err.code);});
 });
 
 //COMMENT MODEL
@@ -78,12 +80,16 @@ app.post('/api/db/subfora', (req,res) => {
 app.get('/api/db/users/:username', (req,res) => {
   client.query(`SELECT * FROM users WHERE username=$1;`, [req.params.username])
   .then(client.query(`UPDATE users SET last_login = to_timestamp(${Date.now()}/1000) WHERE username=$1;`, [req.params.username]))
-  .then(result => res.send(result.rows));
+  .then(result => {
+    if (!result.rows.length) throw 'User does not exist';
+    res.status(200).send(result.rows);})
+  .catch(err => { console.log(err); res.status(500).send(err);});
 });
 
 //THREAD MODEL
 app.get('/api/db/thread/:id', (req,res) => {
-  client.query(`SELECT comments.id AS comment_id, comments.created_on AS comment_created_on, subfora.title AS subforum_title, threads.title AS thread_title, username, users.created_on AS user_created_on, num_comments, gravatar_hash, content FROM comments INNER JOIN users ON comments.creator = users.id INNER JOIN subfora ON comments.subforum_parent = subfora.id INNER JOIN threads ON comments.thread_parent = threads.id WHERE thread_parent=$1;`, [req.params.id])
+  client.query(`SELECT threads.id AS thread_id, subfora.id AS subforum_id, comments.id AS comment_id, comments.created_on AS comment_created_on, subfora.title AS subforum_title, threads.title AS thread_title, username, users.created_on AS user_created_on, num_comments, gravatar_hash, content FROM comments INNER JOIN users ON comments.creator = users.id INNER JOIN subfora ON comments.subforum_parent = subfora.id INNER JOIN threads ON comments.thread_parent = threads.id WHERE thread_parent=$1;`, [req.params.id])
+  .then(client.query(`UPDATE threads SET view_count = view_count + 1 WHERE id = $1;`, [req.params.id]))
   .then(result => res.send(result.rows));
 });
 
@@ -92,7 +98,7 @@ app.get('/api/db/subfora/:id', (req,res) => {
   var queries = {};
   queries.results = [];
 
-  client.query(`SELECT threads.id AS thread_id, title, users.username AS thread_creator, view_count, comment_count, comments.created_on AS last_comment_created_on FROM threads INNER JOIN comments ON threads.last_comment = comments.id INNER JOIN users ON threads.creator = users.id WHERE threads.subforum_parent=$1;`, [req.params.id])
+  client.query(`SELECT subfora.id AS subforum_id, comments.id AS comment_id, subfora.title AS subforum_title, threads.id AS thread_id, threads.title, users.username AS thread_creator, view_count, threads.comment_count, comments.created_on AS last_comment_created_on FROM threads INNER JOIN comments ON threads.last_comment = comments.id INNER JOIN users ON threads.creator = users.id JOIN subfora ON threads.subforum_parent = subfora.id WHERE threads.subforum_parent=$1;`, [req.params.id])
   .then(result => queries.rows = result.rows);
 
   client.query(`SELECT users.username AS last_commenter FROM threads INNER JOIN comments ON threads.last_comment = comments.id INNER JOIN users ON comments.creator = users.id WHERE threads.subforum_parent=$1;`, [req.params.id])
