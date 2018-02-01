@@ -8,9 +8,9 @@ const bodyParser = require('body-parser');
 
 /*********************************CONST DECLARATIONS*****************************/
 const app = express();
-const PORT = process.env.PORT || 3737;
+const PORT = process.env.PORT //|| 3737;
 const conString = process.env.DATABASE_URL;
-//const conString = 'postgres://localhost:5432/d29forum';
+// const conString = 'postgres://localhost:5432/d29forum';
 const client = new pg.Client(conString);
 
 /*********************************MIDDLEWARE*************************************/
@@ -100,14 +100,18 @@ app.get('/api/db/subfora/:id', (req,res) => {
   var queries = {};
   queries.results = [];
 
-  client.query(`SELECT subfora.id AS subforum_id, comments.id AS comment_id, subfora.title AS subforum_title, threads.id AS thread_id, threads.title, users.username AS thread_creator, view_count, threads.comment_count, comments.created_on AS last_comment_created_on FROM threads INNER JOIN comments ON threads.last_comment = comments.id INNER JOIN users ON threads.creator = users.id JOIN subfora ON threads.subforum_parent = subfora.id WHERE threads.subforum_parent=$1;`, [req.params.id])
+  client.query(`SELECT comments.content, users.gravatar_hash, subfora.id AS subforum_id, comments.id AS comment_id, subfora.title AS subforum_title, threads.id AS thread_id, threads.title, users.username AS thread_creator, view_count, threads.comment_count, comments.created_on AS last_comment_created_on FROM threads INNER JOIN comments ON threads.last_comment = comments.id INNER JOIN users ON threads.creator = users.id JOIN subfora ON threads.subforum_parent = subfora.id WHERE threads.subforum_parent=$1;`, [req.params.id])
   .then(result => queries.rows = result.rows);
 
   client.query(`SELECT users.username AS last_commenter FROM threads INNER JOIN comments ON threads.last_comment = comments.id INNER JOIN users ON comments.creator = users.id WHERE threads.subforum_parent=$1;`, [req.params.id])
   .then(result => { for (var i = 0; i < result.rows.length; i++) queries.results.push(Object.assign({},result.rows[i],queries.rows[i]));})
 
+  // client.query(`SELECT comments.content, users.gravatar_hash FROM subfora INNER JOIN comments ON subfora.last_comment = comments.id INNER JOIN users ON comments.creator = users.id WHERE subfora.id=$1;`, [req.params.id])
+  // .then(result => { for (var i = 0; i < result.rows.length; i++) queries.results2.push(Object.assign({},result.rows[i],queries.rows[i])); console.log(result)})
+
   .then(() => res.send(queries.results));
 });
+
 
 // users.gravatar_hash
 // comments.content
