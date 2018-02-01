@@ -171,8 +171,8 @@ app.delete('/api/db/users/:username', (req,res) => {
 
 //COMMENT MODEL
 app.delete('/api/db/comments/:id', (req,res) => {
-  client.query(`UPDATE subfora SET last_comment = last_comment_cache WHERE last_comment=$1;`, [req.params.id]);
-  client.query(`UPDATE threads SET last_comment = last_comment_cache WHERE last_comment=$1;`, [req.params.id]);
+  client.query(`UPDATE subfora SET last_comment = last_comment_cache, comment_count = comment_count - 1 WHERE last_comment=$1;`, [req.params.id]);
+  client.query(`UPDATE threads SET last_comment = last_comment_cache, comment_count = comment_count - 1  WHERE last_comment=$1;`, [req.params.id]);
   client.query(`DELETE FROM comments WHERE id = $1;`, [req.params.id])
   .then(() => res.send(req.params.id));
 });
