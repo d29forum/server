@@ -102,7 +102,7 @@ app.get('/api/db/subfora/:id', (req,res) => {
   var queries = {};
   queries.results = [];
 
-  client.query(`SELECT /*comments.content, users.gravatar_hash,*/ subfora.id AS subforum_id, comments.id AS comment_id, subfora.title AS subforum_title, threads.id AS thread_id, threads.title, users.username AS thread_creator, view_count, threads.comment_count, comments.created_on AS last_comment_created_on FROM threads INNER JOIN comments ON threads.last_comment = comments.id INNER JOIN users ON threads.creator = users.id JOIN subfora ON threads.subforum_parent = subfora.id WHERE threads.subforum_parent=$1;`, [req.params.id])
+  client.query(`SELECT comments.content, users.gravatar_hash, subfora.id AS subforum_id, comments.id AS comment_id, subfora.title AS subforum_title, threads.id AS thread_id, threads.title, users.username AS thread_creator, view_count, threads.comment_count, comments.created_on AS last_comment_created_on FROM threads INNER JOIN comments ON threads.last_comment = comments.id INNER JOIN users ON threads.creator = users.id JOIN subfora ON threads.subforum_parent = subfora.id WHERE threads.subforum_parent=$1;`, [req.params.id])
   .then(result => queries.rows = result.rows);
 
   client.query(`SELECT users.username AS last_commenter FROM threads INNER JOIN comments ON threads.last_comment = comments.id INNER JOIN users ON comments.creator = users.id WHERE threads.subforum_parent=$1;`, [req.params.id])
