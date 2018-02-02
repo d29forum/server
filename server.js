@@ -8,9 +8,9 @@ const bodyParser = require('body-parser');
 
 /*********************************CONST DECLARATIONS*****************************/
 const app = express();
-const PORT = process.env.PORT //|| 3737;
-const conString = process.env.DATABASE_URL;
-// const conString = 'postgres://localhost:5432/d29forum';
+const PORT = process.env.PORT || 3737;
+// const conString = process.env.DATABASE_URL;
+const conString = 'postgres://localhost:5432/d29forum';
 const client = new pg.Client(conString);
 
 /*********************************MIDDLEWARE*************************************/
